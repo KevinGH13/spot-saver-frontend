@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -7,14 +7,23 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "Spot Saver",
-  description: "Save your favorites spots",
+  description: "Save your favorite spots",
+  manifest: "/manifest.json",
+  authors: [{ name: "KevinGH" }],
+  icons: [
+    { rel: "apple-touch-icon", url: "icons/icon.png" },
+    { rel: "icon", url: "icons/icon.png" },
+  ],
+};
+
+export const viewport: Viewport = {
+  themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#fff" }],
+  minimumScale: 1,
+  initialScale: 1,
+  width: "device-width",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -24,11 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <body className={`${geistSans.variable} antialiased`}>{children}</body>
     </html>
   );
 }
