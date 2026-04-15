@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Spot Saver
 
-## Getting Started
+Webapp para guardar sitios de interés (restaurantes, cafés, hoteles) y ubicarlos en un mapa.
 
-First, run the development server:
+## Stack
+
+- **Next.js 15** + **React 19** (App Router)
+- **Tailwind CSS v4**
+- **Drizzle ORM** + **Neon** (Postgres serverless)
+- **Leaflet** + **react-leaflet** (mapas, tiles OpenStreetMap)
+- **@ducanh2912/next-pwa** (instalable en móvil)
+
+## Requisitos
+
+- Node.js 18+
+- Cuenta en [Neon](https://neon.tech) con un proyecto creado
+
+## Configuración
+
+1. Clona el repo e instala dependencias:
+
+```bash
+npm install
+```
+
+2. Crea el archivo `.env` en la raíz con tu connection string de Neon:
+
+```bash
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+```
+
+3. Ejecuta la migración para crear las tablas:
+
+```bash
+npm run db:migrate
+```
+
+4. Arranca el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev           # Servidor de desarrollo
+npm run build         # Build de producción
+npm run db:generate   # Genera migración SQL a partir del schema
+npm run db:migrate    # Ejecuta la migración en Neon
+npm run db:studio     # UI visual de la base de datos (Drizzle Studio)
+```
 
-## Learn More
+## Variables de entorno
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | Connection string de Neon (incluir `?sslmode=require`) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+El proyecto está pensado para desplegarse en Vercel. Solo hay que añadir la variable `DATABASE_URL` en el panel de Vercel antes del primer deploy.
