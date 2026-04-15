@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
+/* Airbnb Design System — palette tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #2a2929;
+  /* Brand */
+  --palette-bg-primary-core: #ff385c;
+  --palette-bg-tertiary-core: #e00b41;
+
+  /* Text scale */
+  --palette-text-primary: #222222;
+  --palette-text-secondary: #6a6a6a;
+  --palette-text-disabled: rgba(0, 0, 0, 0.24);
+
+  /* Surfaces */
+  --palette-surface-white: #ffffff;
+  --palette-surface-secondary: #f2f2f2;
+  --palette-border: #c1c1c1;
+
+  /* Shadows */
+  --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+  --shadow-hover: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+
+  /* Font */
+  --font-airbnb: "Airbnb Cereal VF", Circular, -apple-system, system-ui,
+    Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #f4f4f4;
-    --foreground: #ededed;
-  }
+  --color-background: var(--palette-surface-white);
+  --color-foreground: var(--palette-text-primary);
+  --color-brand: var(--palette-bg-primary-core);
+  --font-sans: var(--font-airbnb);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--palette-surface-white);
+  color: var(--palette-text-primary);
+  font-family: var(--font-airbnb);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

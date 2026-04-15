@@ -9,9 +9,8 @@ import {
 
 export const spotCategoryEnum = pgEnum("spot_category", [
   "restaurant",
-  "cafe",
+  "coffee",
   "hotel",
-  "bar",
   "other",
 ]);
 

@@ -1,13 +1,28 @@
 import { Plus } from "lucide-react";
-import Link from "next/link";
 
-export default function CreateButton() {
+type Props = {
+  onClick: () => void;
+};
+
+export default function CreateButton({ onClick }: Props) {
   return (
-    <Link
-      href="/create"
-      className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-black text-white shadow-lg hover:bg-gray-800 transition-colors"
+    <button
+      onClick={onClick}
+      className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full text-white transition-colors"
+      style={{
+        backgroundColor: "var(--palette-text-primary)",
+        boxShadow: "var(--shadow-card)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+          "var(--palette-bg-primary-core)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+          "var(--palette-text-primary)";
+      }}
     >
-      <Plus />
-    </Link>
+      <Plus size={22} />
+    </button>
   );
 }
