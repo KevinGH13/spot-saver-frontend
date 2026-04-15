@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   MapPin,
   ExternalLink,
   Calendar,
-  Map,
 } from "lucide-react";
+
+const MiniMapPreview = dynamic(
+  () => import("@/components/ui/mini-map-preview"),
+  { ssr: false }
+);
 import { Spot } from "@/types/spot";
 import { CATEGORY_META } from "@/lib/category-meta";
 import { DUMMY_SPOTS } from "@/lib/dummy-spots";
@@ -141,32 +146,20 @@ export default function SpotDetailPage() {
 
         <Divider />
 
-        {/* Map placeholder */}
-        <div className="flex flex-col gap-2">
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--palette-text-primary)" }}
-          >
-            Ubicación
-          </p>
-          <div
-            className="w-full rounded-[20px] flex flex-col items-center justify-center gap-3"
-            style={{
-              height: "200px",
-              border: "1.5px dashed var(--palette-border)",
-              backgroundColor: "var(--palette-surface-secondary)",
-            }}
-          >
-            <Map
-              size={32}
-              strokeWidth={1.4}
-              style={{ color: "var(--palette-text-secondary)" }}
-            />
-            <p className="text-sm" style={{ color: "var(--palette-text-secondary)" }}>
-              Mapa disponible próximamente
+        {/* Map */}
+        {spot.lat !== 0 || spot.lng !== 0 ? (
+          <div className="flex flex-col gap-2">
+            <p
+              className="text-sm font-semibold"
+              style={{ color: "var(--palette-text-primary)" }}
+            >
+              Ubicación
             </p>
+            <div className="rounded-[20px] overflow-hidden" style={{ height: "200px" }}>
+              <MiniMapPreview lat={spot.lat} lng={spot.lng} />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

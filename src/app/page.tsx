@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { LayoutList, Map } from "lucide-react";
 import CreateButton from "@/components/ui/create-button";
 import CreateSpotModal from "@/components/ui/create-spot-modal";
 import Header from "@/components/ui/header";
@@ -10,12 +12,31 @@ import SpotCard from "@/components/ui/spot-card";
 import { Spot, SpotCategory } from "@/types/spot";
 import { DUMMY_SPOTS } from "@/lib/dummy-spots";
 
+const SpotMap = dynamic(() => import("@/components/ui/spot-map"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="w-full h-full flex items-center justify-center"
+      style={{ backgroundColor: "var(--palette-surface-secondary)" }}
+    >
+      <p className="text-sm" style={{ color: "var(--palette-text-secondary)" }}>
+        Cargando mapa…
+      </p>
+    </div>
+  ),
+});
+
+type View = "list" | "map";
+
 export default function Home() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<SpotCategory | "all">("all");
+  const [activeCategory, setActiveCategory] = useState<SpotCategory | "all">(
+    "all"
+  );
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [view, setView] = useState<View>("list");
 
   const fetchSpots = useCallback(async () => {
     setLoading(true);
@@ -50,37 +71,50 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <div className="pt-[72px]">
-        {/* Category tabs */}
+      <div className="pt-[72px] flex flex-col h-screen">
+        {/* Category tabs + view toggle */}
         <div
-          className="px-6 pt-2 border-b"
+          className="flex items-center justify-between border-b px-4"
           style={{ borderColor: "rgba(0,0,0,0.08)" }}
         >
-          <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
+          <div className="flex-1 overflow-x-auto">
+            <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
+          </div>
+          <div className="flex items-center gap-1 pl-2 shrink-0">
+            <ViewToggle current={view} onChange={setView} />
+          </div>
         </div>
 
-        {/* Search */}
-        <div
-          className="px-6 py-3 border-b"
-          style={{ borderColor: "rgba(0,0,0,0.08)" }}
-        >
-          <SearchBar value={search} onChange={setSearch} />
-        </div>
+        {/* Search — only in list mode */}
+        {view === "list" && (
+          <div
+            className="px-6 py-3 border-b"
+            style={{ borderColor: "rgba(0,0,0,0.08)" }}
+          >
+            <SearchBar value={search} onChange={setSearch} />
+          </div>
+        )}
 
-        {/* Grid */}
-        <main className="px-4 py-5">
-          {loading ? (
-            <SpotSkeleton />
-          ) : filtered.length === 0 ? (
-            <EmptyState hasSearch={!!search || activeCategory !== "all"} />
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {filtered.map((spot) => (
-                <SpotCard key={spot.id} spot={spot} />
-              ))}
-            </div>
-          )}
-        </main>
+        {/* Content */}
+        {view === "list" ? (
+          <main className="flex-1 overflow-y-auto px-4 py-5">
+            {loading ? (
+              <SpotSkeleton />
+            ) : filtered.length === 0 ? (
+              <EmptyState hasSearch={!!search || activeCategory !== "all"} />
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {filtered.map((spot) => (
+                  <SpotCard key={spot.id} spot={spot} />
+                ))}
+              </div>
+            )}
+          </main>
+        ) : (
+          <div className="flex-1">
+            <SpotMap spots={filtered} />
+          </div>
+        )}
       </div>
 
       <CreateButton onClick={() => setShowModal(true)} />
@@ -91,6 +125,42 @@ export default function Home() {
           onCreated={fetchSpots}
         />
       )}
+    </div>
+  );
+}
+
+function ViewToggle({
+  current,
+  onChange,
+}: {
+  current: View;
+  onChange: (v: View) => void;
+}) {
+  return (
+    <div
+      className="flex items-center rounded-lg p-0.5"
+      style={{ backgroundColor: "var(--palette-surface-secondary)" }}
+    >
+      {(["list", "map"] as View[]).map((v) => {
+        const Icon = v === "list" ? LayoutList : Map;
+        const active = current === v;
+        return (
+          <button
+            key={v}
+            onClick={() => onChange(v)}
+            className="flex items-center justify-center w-8 h-8 rounded-md transition-all"
+            style={{
+              backgroundColor: active ? "#ffffff" : "transparent",
+              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+              color: active
+                ? "var(--palette-text-primary)"
+                : "var(--palette-text-secondary)",
+            }}
+          >
+            <Icon size={15} />
+          </button>
+        );
+      })}
     </div>
   );
 }
