@@ -14,7 +14,13 @@
   /* Surfaces */
   --palette-surface-white: #ffffff;
   --palette-surface-secondary: #f2f2f2;
+  --palette-surface-overlay: rgba(255, 255, 255, 0.9);
   --palette-border: #c1c1c1;
+  --palette-border-subtle: rgba(0, 0, 0, 0.08);
+
+  /* Action buttons */
+  --palette-action-bg: #222222;
+  --palette-action-color: #ffffff;
 
   /* Shadows */
   --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px,
@@ -25,6 +31,24 @@
   --font-airbnb: "Airbnb Cereal VF", Circular, -apple-system, system-ui,
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+
+/* Dark mode tokens — activar con clase .dark en <html> cuando se implemente el toggle
+.dark {
+  --palette-text-primary: #f2f2f2;
+  --palette-text-secondary: #a0a0a0;
+  --palette-text-disabled: rgba(255, 255, 255, 0.24);
+  --palette-surface-white: #1a1a1a;
+  --palette-surface-secondary: #2a2a2a;
+  --palette-surface-overlay: rgba(26, 26, 26, 0.9);
+  --palette-border: #444444;
+  --palette-border-subtle: rgba(255, 255, 255, 0.08);
+  --palette-action-bg: var(--palette-bg-primary-core);
+  --palette-action-color: #ffffff;
+  --shadow-card: rgba(0, 0, 0, 0.5) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.3) 0px 2px 6px, rgba(0, 0, 0, 0.6) 0px 4px 8px;
+  --shadow-hover: rgba(0, 0, 0, 0.6) 0px 4px 12px;
+}
+*/
 
 @theme inline {
   --color-background: var(--palette-surface-white);

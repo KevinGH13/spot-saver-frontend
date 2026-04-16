@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { X, Loader2, MapPin } from "lucide-react";
-import { SpotCategory, CreateSpotInput } from "@/types/spot";
+import { Spot, SpotCategory, CreateSpotInput } from "@/types/spot";
 
 const MiniMapPreview = dynamic(() => import("./mini-map-preview"), {
   ssr: false,
@@ -17,16 +17,9 @@ const CATEGORIES: { label: string; value: SpotCategory }[] = [
 ];
 
 type Props = {
+  spot?: Spot; // si se pasa, modo edición
   onClose: () => void;
-  onCreated: () => void;
-};
-
-const EMPTY_FORM = {
-  name: "",
-  category: "restaurant" as SpotCategory,
-  address: "",
-  url: "",
-  tags: "",
+  onSaved: () => void;
 };
 
 type Suggestion = {
@@ -36,13 +29,9 @@ type Suggestion = {
   lon: string;
 };
 
-/** Devuelve las dos primeras partes del display_name como título y subtítulo */
 function parseSuggestion(display_name: string): { title: string; subtitle: string } {
   const parts = display_name.split(", ");
-  return {
-    title: parts[0],
-    subtitle: parts.slice(1, 3).join(", "),
-  };
+  return { title: parts[0], subtitle: parts.slice(1, 3).join(", ") };
 }
 
 async function fetchSuggestions(query: string): Promise<Suggestion[]> {
@@ -54,9 +43,24 @@ async function fetchSuggestions(query: string): Promise<Suggestion[]> {
   return res.json();
 }
 
-export default function CreateSpotModal({ onClose, onCreated }: Props) {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+export default function SpotModal({ spot, onClose, onSaved }: Props) {
+  const isEdit = !!spot;
+
+  const [form, setForm] = useState({
+    name: spot?.name ?? "",
+    category: (spot?.category ?? "restaurant") as SpotCategory,
+    address: spot?.address ?? "",
+    url: spot?.url ?? "",
+    tags: spot?.tags.join(", ") ?? "",
+  });
+
+  // Pre-llenar coords si el spot ya tiene ubicación geocodificada
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    spot && (spot.lat !== 0 || spot.lng !== 0)
+      ? { lat: spot.lat, lng: spot.lng }
+      : null
+  );
+
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -66,7 +70,6 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const addressWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -87,7 +90,6 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
     setShowSuggestions(false);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
     if (value.trim().length < 3) return;
 
     debounceRef.current = setTimeout(async () => {
@@ -106,7 +108,7 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
     setShowSuggestions(false);
   }
 
-  function set(field: keyof typeof EMPTY_FORM, value: string) {
+  function set(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -138,18 +140,21 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/spots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        isEdit ? `/api/spots/${spot.id}` : "/api/spots",
+        {
+          method: isEdit ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error ?? "Error al crear el spot.");
+        throw new Error(data.error ?? "Error al guardar el spot.");
       }
 
-      onCreated();
+      onSaved();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado.");
@@ -165,7 +170,7 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
 
       {/* Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white md:inset-0 md:m-auto md:max-w-lg md:max-h-fit"
+        className="fixed bottom-0 left-0 right-0 z-50 md:inset-0 md:m-auto md:max-w-lg md:max-h-fit bg-[var(--palette-surface-white)]"
         style={{ borderRadius: "20px 20px 0 0", boxShadow: "var(--shadow-card)" }}
       >
         {/* Handle (mobile only) */}
@@ -179,13 +184,13 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: "rgba(0,0,0,0.08)" }}
+          style={{ borderColor: "var(--palette-border-subtle)" }}
         >
           <h2
             className="text-lg font-semibold"
             style={{ color: "var(--palette-text-primary)", letterSpacing: "-0.18px" }}
           >
-            Nuevo spot
+            {isEdit ? "Editar spot" : "Nuevo spot"}
           </h2>
           <button
             onClick={onClose}
@@ -232,12 +237,12 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
                   style={
                     form.category === value
                       ? {
-                          backgroundColor: "var(--palette-text-primary)",
-                          color: "#ffffff",
-                          borderColor: "var(--palette-text-primary)",
+                          backgroundColor: "var(--palette-action-bg)",
+                          color: "var(--palette-action-color)",
+                          borderColor: "var(--palette-action-bg)",
                         }
                       : {
-                          backgroundColor: "#ffffff",
+                          backgroundColor: "var(--palette-surface-white)",
                           color: "var(--palette-text-primary)",
                           borderColor: "var(--palette-border)",
                         }
@@ -294,7 +299,7 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
                 <ul
                   className="absolute z-10 w-full mt-1 overflow-hidden"
                   style={{
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--palette-surface-white)",
                     border: "1px solid var(--palette-border)",
                     borderRadius: "12px",
                     boxShadow: "var(--shadow-card)",
@@ -307,7 +312,9 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
                         <button
                           type="button"
                           onClick={() => selectSuggestion(s)}
-                          className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                          className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--palette-surface-secondary)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
                         >
                           <MapPin
                             size={14}
@@ -338,7 +345,7 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
               )}
             </div>
 
-            {/* Mini-map preview after selection */}
+            {/* Mini-map preview */}
             {coords && (
               <div className="mt-2">
                 <MiniMapPreview lat={coords.lat} lng={coords.lng} />
@@ -387,8 +394,11 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
           <button
             type="submit"
             disabled={loading || searching}
-            className="w-full py-3 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-            style={{ backgroundColor: "var(--palette-text-primary)" }}
+            className="w-full py-3 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: "var(--palette-action-bg)",
+              color: "var(--palette-action-color)",
+            }}
             onMouseEnter={(e) => {
               if (!loading)
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor =
@@ -396,10 +406,12 @@ export default function CreateSpotModal({ onClose, onCreated }: Props) {
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                "var(--palette-text-primary)";
+                "var(--palette-action-bg)";
             }}
           >
-            {loading ? "Guardando…" : "Guardar spot"}
+            {loading
+              ? isEdit ? "Guardando…" : "Guardando…"
+              : isEdit ? "Guardar cambios" : "Guardar spot"}
           </button>
         </form>
       </div>
@@ -436,5 +448,5 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid var(--palette-border)",
   borderRadius: "8px",
   color: "var(--palette-text-primary)",
-  backgroundColor: "#ffffff",
+  backgroundColor: "var(--palette-surface-white)",
 };

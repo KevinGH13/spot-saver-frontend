@@ -13,7 +13,7 @@ export default function SpotCard({ spot }: Props) {
   return (
     <Link href={`/spots/${spot.id}`} className="block">
       <article
-        className="flex flex-col rounded-[20px] bg-white overflow-hidden transition-shadow"
+        className="flex flex-col rounded-[20px] overflow-hidden transition-shadow bg-[var(--palette-surface-white)]"
         style={{ boxShadow: "var(--shadow-card)" }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLElement).style.boxShadow =

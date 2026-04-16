@@ -11,7 +11,7 @@ export default function SearchBar({ value, onChange }: Props) {
       className="flex items-center gap-3 px-4 py-2.5 rounded-lg"
       style={{
         border: "1px solid var(--palette-border)",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--palette-surface-white)",
       }}
     >
       <Search

@@ -20,7 +20,7 @@ type Props = {
 
 export default function CategoryFilter({ active, onChange }: Props) {
   return (
-    <nav className="flex flex-row gap-1 overflow-x-auto">
+    <nav className="flex flex-row gap-1">
       {CATEGORIES.map(({ label, value, Icon }) => {
         const isActive = active === value;
         return (
@@ -36,7 +36,7 @@ export default function CategoryFilter({ active, onChange }: Props) {
                   }
                 : {
                     color: "var(--palette-text-secondary)",
-                    borderColor: "transparent",
+                    borderColor: "var(--palette-border-subtle)",
                   }
             }
             onMouseEnter={(e) => {

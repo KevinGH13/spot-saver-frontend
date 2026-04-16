@@ -10,7 +10,7 @@ export default function CreateButton({ onClick }: Props) {
       onClick={onClick}
       className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full text-white transition-colors"
       style={{
-        backgroundColor: "var(--palette-text-primary)",
+        backgroundColor: "var(--palette-action-bg)",
         boxShadow: "var(--shadow-card)",
       }}
       onMouseEnter={(e) => {
@@ -19,7 +19,7 @@ export default function CreateButton({ onClick }: Props) {
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-          "var(--palette-text-primary)";
+          "var(--palette-action-bg)";
       }}
     >
       <Plus size={22} />

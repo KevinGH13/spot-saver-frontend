@@ -69,31 +69,24 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[var(--palette-surface-white)]">
       <Header />
       <div className="pt-[72px] flex flex-col h-screen">
-        {/* Category tabs + view toggle */}
-        <div
-          className="flex items-center justify-between border-b px-4"
-          style={{ borderColor: "rgba(0,0,0,0.08)" }}
-        >
-          <div className="flex-1 overflow-x-auto">
-            <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
-          </div>
-          <div className="flex items-center gap-1 pl-2 shrink-0">
-            <ViewToggle current={view} onChange={setView} />
-          </div>
+        {/* Category tabs */}
+        <div className="px-4 overflow-x-auto">
+          <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
         </div>
 
-        {/* Search — only in list mode */}
-        {view === "list" && (
-          <div
-            className="px-6 py-3 border-b"
-            style={{ borderColor: "rgba(0,0,0,0.08)" }}
-          >
+        {/* Search + view toggle */}
+        <div
+          className="flex items-center gap-2 px-4 py-3 border-b"
+          style={{ borderColor: "var(--palette-border-subtle)" }}
+        >
+          <div className="flex-1">
             <SearchBar value={search} onChange={setSearch} />
           </div>
-        )}
+          <ViewToggle current={view} onChange={setView} />
+        </div>
 
         {/* Content */}
         {view === "list" ? (
@@ -122,7 +115,7 @@ export default function Home() {
       {showModal && (
         <CreateSpotModal
           onClose={() => setShowModal(false)}
-          onCreated={fetchSpots}
+          onSaved={fetchSpots}
         />
       )}
     </div>
@@ -150,7 +143,7 @@ function ViewToggle({
             onClick={() => onChange(v)}
             className="flex items-center justify-center w-8 h-8 rounded-md transition-all"
             style={{
-              backgroundColor: active ? "#ffffff" : "transparent",
+              backgroundColor: active ? "var(--palette-surface-white)" : "transparent",
               boxShadow: active ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
               color: active
                 ? "var(--palette-text-primary)"
