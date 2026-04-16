@@ -1,52 +1,54 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { importLibrary } from "@googlemaps/js-api-loader";
+import "@/lib/maps";
 
 type Props = { lat: number; lng: number };
 
 export default function MiniMapPreview({ lat, lng }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
-
-    const icon = L.divIcon({
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:#ff385c;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
-      className: "",
-    });
+    let cancelled = false;
 
     if (mapRef.current) {
-      mapRef.current.setView([lat, lng], 15);
-      markerRef.current?.setLatLng([lat, lng]);
+      const pos = { lat, lng };
+      mapRef.current.setCenter(pos);
+      markerRef.current?.position && (markerRef.current.position = pos);
       return;
     }
 
-    const map = L.map(containerRef.current, {
-      center: [lat, lng],
-      zoom: 15,
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
-    });
+    (async () => {
+      const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+        importLibrary("maps") as Promise<google.maps.MapsLibrary>,
+        importLibrary("marker") as Promise<google.maps.MarkerLibrary>,
+      ]);
+      if (cancelled || !containerRef.current) return;
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+      const pos = { lat, lng };
 
-    markerRef.current = L.marker([lat, lng], { icon }).addTo(map);
-    mapRef.current = map;
+      const map = new Map(containerRef.current, {
+        center: pos,
+        zoom: 15,
+        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        zoomControl: false,
+        gestureHandling: "none",
+        disableDoubleClickZoom: true,
+      });
+
+      markerRef.current = new AdvancedMarkerElement({ position: pos, map });
+      mapRef.current = map;
+    })();
 
     return () => {
-      map.remove();
-      mapRef.current = null;
-      markerRef.current = null;
+      cancelled = true;
     };
   }, [lat, lng]);
 

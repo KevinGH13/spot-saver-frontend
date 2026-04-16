@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { importLibrary } from "@googlemaps/js-api-loader";
+import "@/lib/maps";
 import { Spot } from "@/types/spot";
 import { CATEGORY_META } from "@/lib/category-meta";
 
@@ -18,105 +18,137 @@ function escapeHtml(str: string): string {
 
 export default function SpotMap({ spots }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const activeInfoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
 
   const mappable = spots.filter((s) => s.lat !== 0 || s.lng !== 0);
 
-  // Get user location once on mount
+  // Geolocalización del usuario
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
-      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-      () => {} // silently ignore permission denied / unavailable
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {}
     );
   }, []);
 
-  // Initialize / reinitialize map when spots change
+  // Inicializar el mapa una sola vez
   useEffect(() => {
     if (!containerRef.current) return;
+    let cancelled = false;
 
-    if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
+    (async () => {
+      const { Map } = await importLibrary("maps") as google.maps.MapsLibrary;
+      if (cancelled || !containerRef.current) return;
 
-    const defaultCenter: [number, number] =
-      mappable.length > 0
-        ? [mappable[0].lat, mappable[0].lng]
-        : userLocation ?? [40.4168, -3.7038]; // fallback Madrid
-
-    const map = L.map(containerRef.current, {
-      center: defaultCenter,
-      zoom: 13,
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    }).addTo(map);
-
-    mappable.forEach((spot) => {
-      const meta = CATEGORY_META[spot.category];
-      const icon = L.divIcon({
-        html: `<div style="width:20px;height:20px;border-radius:50%;background:${meta.color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-        className: "",
+      const map = new Map(containerRef.current, {
+        center: { lat: 40.4168, lng: -3.7038 },
+        zoom: 13,
+        mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
       });
 
-      const popup = `
-        <div style="font-family:system-ui;min-width:130px;padding:2px 0">
-          <div style="font-weight:600;font-size:14px;color:#222;margin-bottom:2px">${escapeHtml(spot.name)}</div>
-          <div style="font-size:12px;color:#6a6a6a">${escapeHtml(meta.label)}</div>
-          ${spot.address ? `<div style="font-size:12px;color:#6a6a6a;margin-top:2px">${escapeHtml(spot.address)}</div>` : ""}
-        </div>
-      `;
-
-      L.marker([spot.lat, spot.lng], { icon }).bindPopup(popup).addTo(map);
-    });
-
-    if (mappable.length > 1) {
-      const bounds = L.latLngBounds(mappable.map((s) => [s.lat, s.lng]));
-      map.fitBounds(bounds, { padding: [48, 48] });
-    }
-
-    mapRef.current = map;
+      mapRef.current = map;
+      setMapReady(true);
+    })();
 
     return () => {
-      map.remove();
+      cancelled = true;
+      markersRef.current.forEach((m) => { m.map = null; });
+      markersRef.current = [];
       mapRef.current = null;
     };
-  }, [spots]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Add user location marker when available (separate from map init)
+  // Actualizar markers cuando cambian spots o ubicación
   useEffect(() => {
-    if (!mapRef.current || !userLocation) return;
+    if (!mapReady || !mapRef.current) return;
 
-    const map = mapRef.current;
+    (async () => {
+      const { AdvancedMarkerElement } =
+        await importLibrary("marker") as google.maps.MarkerLibrary;
 
-    const userIcon = L.divIcon({
-      html: `
-        <div style="position:relative;width:20px;height:20px">
-          <div style="width:20px;height:20px;border-radius:50%;background:#4285f4;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>
-        </div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-      className: "",
-    });
+      const map = mapRef.current!;
 
-    const marker = L.marker(userLocation, { icon: userIcon })
-      .bindPopup("Tu ubicación")
-      .addTo(map);
+      // Limpiar markers anteriores
+      markersRef.current.forEach((m) => { m.map = null; });
+      markersRef.current = [];
+      activeInfoWindowRef.current?.close();
+      activeInfoWindowRef.current = null;
 
-    // Only center on user if there are no spots with coordinates
-    if (mappable.length === 0) {
-      map.setView(userLocation, 14);
-    }
+      // Markers de spots
+      mappable.forEach((spot) => {
+        const meta = CATEGORY_META[spot.category];
 
-    return () => {
-      marker.remove();
-    };
-  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+        const pin = document.createElement("div");
+        pin.style.cssText = `width:20px;height:20px;border-radius:50%;background:${meta.color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)`;
+
+        const marker = new AdvancedMarkerElement({
+          position: { lat: spot.lat, lng: spot.lng },
+          map,
+          title: spot.name,
+          content: pin,
+        });
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="font-family:system-ui;min-width:140px;padding:4px 2px">
+              <div style="font-weight:600;font-size:14px;color:#222;margin-bottom:3px">
+                ${escapeHtml(spot.name)}
+              </div>
+              <div style="font-size:12px;color:#6a6a6a;margin-bottom:2px">
+                ${escapeHtml(meta.label)}
+              </div>
+              ${spot.address
+                ? `<div style="font-size:12px;color:#6a6a6a">${escapeHtml(spot.address)}</div>`
+                : ""}
+            </div>
+          `,
+        });
+
+        marker.addListener("click", () => {
+          activeInfoWindowRef.current?.close();
+          infoWindow.open({ anchor: marker, map });
+          activeInfoWindowRef.current = infoWindow;
+        });
+
+        markersRef.current.push(marker);
+      });
+
+      // Marker de ubicación del usuario (punto azul personalizado)
+      if (userLocation) {
+        const dot = document.createElement("div");
+        dot.style.cssText =
+          "width:16px;height:16px;border-radius:50%;background:#4285f4;border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35)";
+
+        const userMarker = new AdvancedMarkerElement({
+          position: userLocation,
+          map,
+          title: "Tu ubicación",
+          content: dot,
+          zIndex: 1000,
+        });
+        markersRef.current.push(userMarker);
+      }
+
+      // Ajustar vista
+      if (mappable.length > 1) {
+        const bounds = new google.maps.LatLngBounds();
+        mappable.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }));
+        map.fitBounds(bounds);
+      } else if (mappable.length === 1) {
+        map.setCenter({ lat: mappable[0].lat, lng: mappable[0].lng });
+        map.setZoom(14);
+      } else if (userLocation) {
+        map.setCenter(userLocation);
+        map.setZoom(14);
+      }
+    })();
+  }, [spots, userLocation, mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative w-full h-full">

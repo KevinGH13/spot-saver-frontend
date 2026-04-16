@@ -35,10 +35,7 @@ function parseSuggestion(display_name: string): { title: string; subtitle: strin
 }
 
 async function fetchSuggestions(query: string): Promise<Suggestion[]> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "SpotSaver/1.0 (kevoutgh@gmail.com)" },
-  });
+  const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
   if (!res.ok) return [];
   return res.json();
 }

@@ -2,6 +2,15 @@ import { SpotCategory, CreateSpotInput, UpdateSpotInput } from "@/types/spot";
 
 const VALID_CATEGORIES: SpotCategory[] = ["restaurant", "coffee", "hotel", "other"];
 
+function normalizeTag(tag: string): string {
+  const t = tag.trim().toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function normalizeTags(tags: string[]): string[] {
+  return tags.map(normalizeTag).filter(Boolean);
+}
+
 const LIMITS = {
   name: 200,
   address: 500,
@@ -81,7 +90,7 @@ export function validateCreate(body: unknown): ValidationResult {
     lng: b.lng,
     address: typeof b.address === "string" && b.address.trim() ? b.address.trim() : undefined,
     url: typeof b.url === "string" && b.url.trim() ? b.url.trim() : undefined,
-    tags: Array.isArray(b.tags) ? b.tags : [],
+    tags: Array.isArray(b.tags) ? normalizeTags(b.tags) : [],
   };
 
   return { ok: true, data };
